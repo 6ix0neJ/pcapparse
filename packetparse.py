@@ -1,6 +1,9 @@
+from turtledemo.penrose import start
+
 from scapy.all import PcapReader
-import ipaddress
 from pathlib import Path
+import ipaddress
+import time
 
 def bannershow():
     print("████   ███   ███  ████     ████   ███  ████   ████ █████  ")
@@ -23,12 +26,22 @@ elif localorspecific  == "c":
     directory = Path('.')
     # Find all .pcapng and .pcap files recursively
     pcap_files = list(directory.rglob('*.pcapng')) + list(directory.rglob('*.pcap'))
+    print("Found ", len(pcap_files), " pcap files.")
+    print("Which should be used? (0-", len(pcap_files)-1, ")")
+    for i, pcap_file in enumerate(pcap_files):
+        print(f"{i}: {pcap_file}")
+    selected_index = int(input("Enter the index of the pcap file to use: "))
+    if 0 <= selected_index < len(pcap_files):
+        pcapf = pcap_files[selected_index]
+    else:
+        print("Invalid index selected. Exiting.")
+        exit()
 
-#if not pcap_files:
-#    print("No pcap files found.")
-#    exit()
+if not pcap_files:
+    print("No pcap files found.")
+    exit()
 
-#pcapf = pcap_files[0]  # Use the first found pcap file
+pcapf = pcap_files[0]  # Use the first found pcap file
 
 validips = []
 src_ips = []
@@ -62,6 +75,7 @@ def isprotocol(packet):
         protocols.append("ICMP found")
 
 with PcapReader(pcapf) as pcap_reader:
+    start_time = time.perf_counter(start())
     for packet in pcap_reader:
         # isprotocol(packet)
         if packet.haslayer("IP"):
