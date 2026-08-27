@@ -30,6 +30,7 @@ if localorspecific  == "c":
     print("Found ", len(pcap_files), " pcap files.")
     if len(pcap_files) == 0:
         print("No pcap files found in the current directory.")
+        print("exiting...")
         exit()
     print("Which should be used? (0 -", len(pcap_files)-1,")")
     for i, pcap_file in enumerate(pcap_files):
@@ -75,6 +76,7 @@ def iplist():
         print(f"{src_ip:<17} {dst_ip:<10}")
 
 def isprotocol(packet):
+    # This function is DEFINITELY not ready it barely even works I lowkey just moved one to other things but ill be back to fic it 100%
     if packet.haslayer("ARP"):
         protocols.append("ARP found")
     if packet.haslayer("DNS"):
