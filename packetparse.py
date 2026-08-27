@@ -28,6 +28,9 @@ if localorspecific  == "c":
     # Find all .pcapng and .pcap files recursively
     pcap_files = list(directory.rglob('*.pcapng')) + list(directory.rglob('*.pcap'))
     print("Found ", len(pcap_files), " pcap files.")
+    if len(pcap_files) == 0:
+        print("No pcap files found in the current directory.")
+        exit()
     print("Which should be used? (0 -", len(pcap_files)-1,")")
     for i, pcap_file in enumerate(pcap_files):
         print(f"{i}: {pcap_file}")
