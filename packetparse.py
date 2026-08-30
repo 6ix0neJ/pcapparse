@@ -15,7 +15,8 @@ def bannershow():
     print(" ")
 
 bannershow()
-
+url = "https://github.com/6ix0neJ"
+print("Written By Jibril Richardson (6ix0neJ on Github) - ", url)
 print("Packet Parser v1.0")
 
 pcap_files = []
