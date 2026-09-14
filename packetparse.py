@@ -1,6 +1,7 @@
 from scapy.all import PcapReader
 from pathlib import Path
 import ipaddress
+import pyshark
 import time
 import os
 
@@ -19,7 +20,7 @@ url = "https://github.com/6ix0neJ"
 print("Written By Jibril Richardson (6ix0neJ on Github) - ", url)
 print("Packet Parser v1.0")
 
-pcap_files = []
+pcap_files_found = []
 
 localorspecific = input("Search for pcap file in current directory or specify path? (c/s): ")
 
@@ -27,18 +28,18 @@ if localorspecific  == "c":
     print("Searching for pcap file recursively in the current directory...")
     directory = Path('.')
     # Find all .pcapng and .pcap files recursively
-    pcap_files = list(directory.rglob('*.pcapng')) + list(directory.rglob('*.pcap'))
-    print("Found ", len(pcap_files), " pcap files.")
-    if len(pcap_files) == 0:
+    pcap_files_found = list(directory.rglob('*.pcapng')) + list(directory.rglob('*.pcap'))
+    print("Found ", len(pcap_files_found), " pcap files.")
+    if len(pcap_files_found) == 0:
         print("No pcap files found in the current directory.")
         print("exiting...")
         exit()
-    print("Which should be used? (0 -", len(pcap_files)-1,")")
-    for i, pcap_file in enumerate(pcap_files):
+    print("Which should be used? (0 -", len(pcap_files_found) - 1, ")")
+    for i, pcap_file in enumerate(pcap_files_found):
         print(f"{i}: {pcap_file}")
     selected_index = int(input("Enter the index of the pcap file to use: "))
-    if 0 <= selected_index < len(pcap_files):
-        pcapf = pcap_files[selected_index]
+    if 0 <= selected_index < len(pcap_files_found):
+        pcapf = pcap_files_found[selected_index]
     else:
         print("Invalid index selected. Exiting.")
         exit()
@@ -48,11 +49,11 @@ elif localorspecific == "s":
     pcapf = input("Pcap path: ")
     pcapf = os.path.basename(pcapf)
 
-if not pcap_files:
+if not pcap_files_found:
     print("No pcap files found.")
     exit()
 
-#pcapf = pcap_files[0]  # Use the first found pcap file
+#pcapf = pcap_files_found[0]  # Use the first found pcap file
 print("Parsing", pcapf,"...")
 print("Analysis time: ",)
 print(type(pcapf))
@@ -76,18 +77,16 @@ def iplist():
     for src_ip, dst_ip in zip(src_ips, dst_ips):
         print(f"{src_ip:<17} {dst_ip:<10}")
 
-def isprotocol(packet):
+def isprotocol(pcapf, protocol):
     # This function is DEFINITELY not ready it barely even works I lowkey just moved one to other things but ill be back to fic it 100%
-    if packet.haslayer("ARP"):
-        protocols.append("ARP found")
-    if packet.haslayer("DNS"):
-        protocols.append("DNS found")
-    if packet.haslayer("TCP"):
-        protocols.append("TCP found")
-    if packet.haslayer("UDP"):
-        protocols.append("UDP found")
-    if packet.haslayer("ICMP"):
-        protocols.append("ICMP found")
+    try:
+        cap = pyshark.FileCapture(pcapf, display_filter=protocol)
+        packets = [packet for packet in cap]
+        cap.close()
+        return packets
+    except Exception as e:
+        print(f"Error reading pcap file: {e}")
+        return []
 
 with PcapReader(pcapf) as pcap_reader:
     start_time = time.perf_counter()
@@ -105,6 +104,9 @@ with PcapReader(pcapf) as pcap_reader:
                     if dst_ip not in validips:
                         dst_ips.append(dst_ip)
                         validips.append(dst_ip)
+
+        if isprotocol(pcapf, "tcp"):
+            protocols.append("TCP")
     stop_time = time.perf_counter()
 
 
