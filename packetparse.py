@@ -1,6 +1,7 @@
 from scapy.all import PcapReader
 from pathlib import Path
 import ipaddress
+import threading
 import pyshark
 import time
 import os
@@ -53,10 +54,23 @@ if not pcap_files_found:
     print("No pcap files found.")
     exit()
 
+
+def live_timer(stop_event):
+    """Worker function for the background timer."""
+    live_start_time = time.time()
+
+    # Run until the main process sets the stop_event
+    while not stop_event.is_set():
+        elapsed = int(time.time() - live_start_time)
+        mins, secs = divmod(elapsed, 60)
+
+        print(f"\rElapsed Time: {mins:02d}:{secs:02d}", end="", flush=True)
+        time.sleep(1)
+
 #pcapf = pcap_files_found[0]  # Use the first found pcap file
 print("Parsing", pcapf,"...")
-print("Analysis time: ",)
-print(type(pcapf))
+
+#print(type(pcapf))
 
 validips = []
 src_ips = []
@@ -89,14 +103,22 @@ def isprotocol(pcapf, protocol):
         return []
 
 with PcapReader(pcapf) as pcap_reader:
-    start_time = time.perf_counter()
-    for packet in pcap_reader:
-        # isprotocol(packet)
-        if packet.haslayer("IP"):
-            src_ip = packet["IP"].src
-            dst_ip = packet["IP"].dst
+    try:
 
-            if is_valid_ip(src_ip) and is_valid_ip(dst_ip):
+        start_time = time.perf_counter()
+
+        stop_live_timer = threading.Event()
+
+        live_timer_thread = threading.Thread(target=live_timer, args=(stop_live_timer,), daemon=True)
+        live_timer_thread.start()
+
+        for packet in pcap_reader:
+            # isprotocol(packet)
+            if packet.haslayer("IP"):
+                src_ip = packet["IP"].src
+                dst_ip = packet["IP"].dst
+
+                if is_valid_ip(src_ip) and is_valid_ip(dst_ip):
 
                     if src_ip not in validips:
                         src_ips.append(src_ip)
@@ -105,12 +127,18 @@ with PcapReader(pcapf) as pcap_reader:
                         dst_ips.append(dst_ip)
                         validips.append(dst_ip)
 
-        if isprotocol(pcapf, "tcp"):
-            protocols.append("TCP")
-    stop_time = time.perf_counter()
+            if isprotocol(pcapf, "tcp"):
+                protocols.append("TCP")
+
+        stop_time = time.perf_counter()
+
+    finally: 
+        stop_live_timer.set()
+        live_timer_thread.join()
 
 
 elapsed_time = stop_time - start_time
+print("\n")
 print("pcap analysis completed in", int(elapsed_time), "seconds.")
 
 print("Valid IPs found in the pcap file:", len(src_ips) + len(dst_ips))
