@@ -127,8 +127,8 @@ with PcapReader(pcapf) as pcap_reader:
                         dst_ips.append(dst_ip)
                         validips.append(dst_ip)
 
-            if isprotocol(pcapf, "tcp"):
-                protocols.append("TCP")
+            #if isprotocol(pcapf, "tcp"):
+            #    protocols.append("TCP")
 
         stop_time = time.perf_counter()
 
